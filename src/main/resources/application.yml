@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: Chatters Park
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    username: root
+    password: root
+    url: jdbc:mysql://localhost:3306/chatterspark
+  data:
+    jpa:
+      repositories:
+        enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+server:
+  port: 8080
+auth:
+  secret: 5a14d1b84635669bbb2a5698fd9d479abf6883af1b1a5aaba066a09736d03c40
+
+
