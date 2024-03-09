@@ -25,6 +25,12 @@ public class SecurityConfiguration {
 
     private AuthenticationFilter authenticationFilter;
 
+    private UserAuthenticationEntryPoint authenticationEntryPoint;
+
+    @Autowired
+    public void setAuthenticationEntryPoint(UserAuthenticationEntryPoint authenticationEntryPoint) {
+        this.authenticationEntryPoint = authenticationEntryPoint;
+    }
     @Autowired
     public void setUserService(UserService userService) {
         this.userService = userService;
@@ -44,6 +50,7 @@ public class SecurityConfiguration {
                             .anyRequest()
                             .authenticated()
                 )
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint))
                 .authenticationProvider(authenticationProvider())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(authenticationFilter, UsernamePasswordAuthenticationFilter.class)

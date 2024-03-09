@@ -51,16 +51,20 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                         authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         SecurityContextHolder.clearContext();
                         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                    }else{
+                        logger.info("Invalid JWT");
+                        response.sendError(HttpStatus.UNAUTHORIZED.value(),"Unauthorized");
                     }
                 }
             }
             filterChain.doFilter(request,response);
-        }catch (MalformedJwtException e){
-            logger.info("Malformed JWT");
-            e.printStackTrace();
-        }catch (ExpiredJwtException e){
-            logger.info("JWT expired");
-            e.printStackTrace();
+        }catch (Exception e){
+            if (e instanceof ExpiredJwtException){
+                response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                response.getWriter().write("Session Expired");
+            }else{
+                response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            }
         }
     }
 }
