@@ -2,7 +2,6 @@ package com.codehustle.chatterpark.socket;
 
 import com.codehustle.chatterpark.service.JwtService;
 import com.codehustle.chatterpark.service.UserService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
@@ -18,9 +17,9 @@ import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.socket.config.annotation.*;
-
-import java.security.Principal;
+import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
+import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
 @Configuration
 @EnableWebSocketMessageBroker
@@ -40,8 +39,9 @@ public class SocketConfiguration implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/public");
+        registry.enableSimpleBroker("/public","/user");
         registry.setApplicationDestinationPrefixes("/app");
+        registry.setUserDestinationPrefix("/user");
     }
 
     @Override
@@ -50,18 +50,20 @@ public class SocketConfiguration implements WebSocketMessageBrokerConfigurer {
             @Override
             public Message<?> preSend(Message<?> message, MessageChannel channel) {
                 StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-                if (StompCommand.CONNECT.equals(accessor.getCommand())){
                     String token  = accessor.getFirstNativeHeader("Authorization");
                     if(token != null){
-                        UserDetails userDetails = userService.loadUserByUsername(jwtService.extractUsername(token.substring(7)));
-                        if(jwtService.isTokenValid(token.substring(7),userDetails)){
-                            UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                            SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
-                            accessor.setUser(usernamePasswordAuthenticationToken);
-                            return message;
+                        try{
+                            UserDetails userDetails = userService.loadUserByUsername(jwtService.extractUsername(token.substring(7)));
+                            if(jwtService.isTokenValid(token.substring(7),userDetails)){
+                                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                                SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                                accessor.setUser(usernamePasswordAuthenticationToken);
+                            }
+                        }catch (Exception e){
+                            StompHeaderAccessor headerAccessor = StompHeaderAccessor.create(StompCommand.DISCONNECT);
+                            headerAccessor.setMessage("Session Expired");
                         }
                     }
-                }
                 return message;
             }
         });
